@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HealthAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+<!-- Auth guard — redirects to / if no token -->
+<script>
+  (function() {
+    const token = localStorage.getItem('hai_access');
+    const exp   = parseInt(localStorage.getItem('hai_exp') || '0', 10);
+    if (!token || Date.now() > exp) {
+      // Try refresh before hard redirect
+      const rt = localStorage.getItem('hai_refresh');
+      if (!rt) { window.location.href = '/'; }
+    }
+  })();
+</script>
+
+<div id="app">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L13.5 8.5L20 7L15.5 12L20 17L13.5 15.5L12 22L10.5 15.5L4 17L8.5 12L4 7L10.5 8.5L12 2Z" fill="white"/>
+          </svg>
+        </div>
+        <span class="logo-name">HealthAI</span>
+      </div>
+      <button class="sidebar-close" id="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+
+    <div class="user-chip" onclick="navigate('profile')">
+      <div class="user-av" id="nav-av">?</div>
+      <div class="user-meta">
+        <div class="user-display" id="nav-name">Loading…</div>
+        <div class="user-city" id="nav-city">Hyderabad, IN</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-group">Main</div>
+      <a class="nav-item" data-page="chat"         onclick="navigate('chat')">        <i>💬</i><span>AI Chat</span></a>
+      <a class="nav-item" data-page="dashboard"    onclick="navigate('dashboard')">   <i>🏠</i><span>Dashboard</span></a>
+      <a class="nav-item" data-page="symptom"      onclick="navigate('symptom')">     <i>🩺</i><span>Symptom Checker</span></a>
+      <a class="nav-item" data-page="hospitals"    onclick="navigate('hospitals')">   <i>🏥</i><span>Hospitals</span></a>
+      <a class="nav-item" data-page="pharmacy"     onclick="navigate('pharmacy')">    <i>🏪</i><span>Pharmacies</span></a>
+      <div class="nav-group">Health Tools</div>
+      <a class="nav-item" data-page="medicines"    onclick="navigate('medicines')">   <i>💊</i><span>Medicines</span></a>
+      <a class="nav-item" data-page="diseases"     onclick="navigate('diseases')">    <i>🔬</i><span>Diseases</span></a>
+      <a class="nav-item" data-page="mental"       onclick="navigate('mental')">      <i>🧠</i><span>Mental Health</span></a>
+      <a class="nav-item" data-page="tips"         onclick="navigate('tips')">        <i>✨</i><span>Health Tips</span></a>
+      <a class="nav-item" data-page="appointments" onclick="navigate('appointments')"><i>📅</i><span>Appointments</span><span class="nav-badge" id="badge-appt" style="display:none"></span></a>
+      <div class="nav-group">Personal</div>
+      <a class="nav-item" data-page="profile"      onclick="navigate('profile')">     <i>👤</i><span>My Profile</span></a>
+      <a class="nav-item" data-page="family"       onclick="navigate('family')">      <i>👨‍👩‍👧</i><span>Family</span></a>
+      <a class="nav-item" data-page="reminders"    onclick="navigate('reminders')">   <i>🔔</i><span>Reminders</span></a>
+      <a class="nav-item" data-page="reports"      onclick="navigate('reports')">     <i>📄</i><span>Health Reports</span></a>
+      <a class="nav-item" data-page="privacy"      onclick="navigate('privacy')">     <i>🔒</i><span>Privacy</span></a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="lang-row">
+        <label class="lang-lbl">Language</label>
+        <select class="lang-sel" id="lang-sel" onchange="setLanguage(this.value)">
+          <option value="en">English</option>
+          <option value="hi">हिंदी</option>
+          <option value="te">తెలుగు</option>
+          <option value="ta">தமிழ்</option>
+          <option value="kn">ಕನ್ನಡ</option>
+          <option value="ml">മലയാളം</option>
+        </select>
+      </div>
+      <button class="sos-btn" onclick="showEmergency()">🚨 Emergency SOS</button>
+      <button class="logout-btn" onclick="doLogout()">↩ Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Overlay for mobile sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- ── Main ── -->
+  <div class="main" id="main">
+    <header class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <h1 class="topbar-title" id="topbar-title">AI Chat</h1>
+      <div class="topbar-right">
+        <button class="topbar-sos" onclick="showEmergency()" title="Emergency SOS">🚨</button>
+        <div class="topbar-av" id="topbar-av" onclick="navigate('profile')">?</div>
+      </div>
+    </header>
+
+    <!-- Emergency banner (shown when triage detects critical symptom) -->
+    <div class="emergency-banner hidden" id="emergency-banner">
+      <span id="emergency-banner-text"></span>
+      <button onclick="hideEmergencyBanner()">✕</button>
+    </div>
+
+    <!-- Page container — pages injected here by JS -->
+    <div class="pages" id="pages"></div>
+  </div>
+</div>
+
+<!-- ── Emergency Modal ── -->
+<div class="modal-backdrop hidden" id="modal-emergency-bg"></div>
+<div class="modal hidden" id="modal-emergency">
+  <div class="modal-header sos">🚨 EMERGENCY</div>
+  <div class="modal-body">
+    <div class="sos-row"><strong>Ambulance</strong><a href="tel:108" class="sos-num">108</a></div>
+    <div class="sos-row"><strong>Police</strong><a href="tel:100" class="sos-num">100</a></div>
+    <div class="sos-row"><strong>Women Helpline</strong><a href="tel:1091" class="sos-num">1091</a></div>
+    <div class="sos-row"><strong>Apollo Hospital (24/7)</strong><a href="tel:04023607777" class="sos-num">040-23607777</a></div>
+    <div class="sos-row"><strong>Mental Health (24/7)</strong><a href="tel:18602662345" class="sos-num">1860-2662-345</a></div>
+  </div>
+  <div class="modal-actions">
+    <a href="https://www.google.com/maps/search/hospital+near+me" target="_blank" class="btn-modal-nav">🗺 Navigate to Hospital</a>
+    <button class="btn-modal-close" onclick="hideEmergency()">Close</button>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast hidden" id="toast"></div>
+
+<!-- Core scripts — order matters -->
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/pages/chat.js"></script>
+<script src="/js/pages/dashboard.js"></script>
+<script src="/js/pages/symptom.js"></script>
+<script src="/js/pages/hospitals.js"></script>
+<script src="/js/pages/pharmacy.js"></script>
+<script src="/js/pages/medicines.js"></script>
+<script src="/js/pages/diseases.js"></script>
+<script src="/js/pages/mental.js"></script>
+<script src="/js/pages/tips.js"></script>
+<script src="/js/pages/appointments.js"></script>
+<script src="/js/pages/profile.js"></script>
+<script src="/js/pages/family.js"></script>
+<script src="/js/pages/reminders.js"></script>
+<script src="/js/pages/reports.js"></script>
+<script src="/js/pages/privacy.js"></script>
+</body>
+</html>

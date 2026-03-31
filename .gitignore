@@ -1,0 +1,9 @@
+.env
+backend/.env
+backend/healthai.db
+backend/venv
+__pycache__/
+backend/requirements.txt
+backend/reports/*
+!backend/reports/.gitkeep
+*.pyc
